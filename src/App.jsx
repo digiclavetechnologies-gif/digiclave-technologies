@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { TextReveal } from "./components/TextReveal.jsx";
 
 const WHATSAPP_URL = "https://wa.me/919456853697";
@@ -71,6 +71,13 @@ const projects = [
   },
 ];
 
+const processSteps = [
+  ["01", "Discover", "We listen and learn about your business, goals, and requirements."],
+  ["02", "Plan", "Together, we define the scope, design direction, and approach."],
+  ["03", "Build", "We create the website or automation, then test how it works."],
+  ["04", "Launch", "We hand over the project and discuss support where it’s useful."],
+];
+
 const faqs = [
   {
     question: "What services does DigiClave Technologies provide?",
@@ -111,6 +118,137 @@ const faqs = [
 
 function whatsappLink(message) {
   return `${WHATSAPP_URL}?text=${encodeURIComponent(message)}`;
+}
+
+function useInView() {
+  const ref = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return undefined;
+
+    if (
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      !("IntersectionObserver" in window)
+    ) {
+      setIsVisible(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -32px 0px" },
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, isVisible];
+}
+
+function RevealItem({
+  as: Element = "div",
+  className = "",
+  delay = 0,
+  children,
+  ...props
+}) {
+  const [ref, isVisible] = useInView();
+
+  return (
+    <Element
+      {...props}
+      ref={ref}
+      className={`${className} motion-reveal${isVisible ? " is-visible" : ""}`}
+      style={{ "--reveal-delay": `${delay}s` }}
+    >
+      {children}
+    </Element>
+  );
+}
+
+function WordRotator() {
+  const words = ["Web development", "Local SEO", "AI automation"];
+  const [activeWord, setActiveWord] = useState(0);
+
+  useEffect(() => {
+    const motionPreference = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    );
+    let interval;
+
+    function syncRotation() {
+      window.clearInterval(interval);
+      if (motionPreference.matches) return;
+
+      interval = window.setInterval(() => {
+        setActiveWord((index) => (index + 1) % words.length);
+      }, 2600);
+    }
+
+    syncRotation();
+    motionPreference.addEventListener("change", syncRotation);
+    return () => {
+      window.clearInterval(interval);
+      motionPreference.removeEventListener("change", syncRotation);
+    };
+  }, []);
+
+  return (
+    <p className="eyebrow eyebrow--hero hero-service-rotator">
+      <span className="sr-only">
+        Web development, local SEO, and AI automation
+      </span>
+      <span key={words[activeWord]} aria-hidden="true">
+        {words[activeWord]}
+      </span>
+    </p>
+  );
+}
+
+function CountUp({ value, label }) {
+  const [ref, isVisible] = useInView();
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!isVisible) return undefined;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setCount(value);
+      return undefined;
+    }
+
+    let animationFrame;
+    const startTime = performance.now();
+    const duration = 900;
+
+    function updateCount(now) {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const easedProgress = 1 - (1 - progress) ** 3;
+      setCount(Math.round(value * easedProgress));
+      if (progress < 1) {
+        animationFrame = window.requestAnimationFrame(updateCount);
+      }
+    }
+
+    animationFrame = window.requestAnimationFrame(updateCount);
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [isVisible, value]);
+
+  return (
+    <div className="studio-stat" ref={ref} role="group" aria-label={`${value} ${label}`}>
+      <span className="studio-stat-value" aria-hidden="true">
+        {count.toLocaleString()}
+      </span>
+      <span className="studio-stat-label" aria-hidden="true">{label}</span>
+    </div>
+  );
 }
 
 function BrandMark({ footer = false }) {
@@ -171,7 +309,42 @@ function WhatsAppIcon() {
 
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [savedTheme, setSavedTheme] = useState(() => {
+    const storedTheme = window.localStorage.getItem("digiclave-theme");
+    return storedTheme === "light" || storedTheme === "dark"
+      ? storedTheme
+      : null;
+  });
+  const [systemPrefersDark, setSystemPrefersDark] = useState(() =>
+    window.matchMedia("(prefers-color-scheme: dark)").matches,
+  );
   const closeMenu = () => setMenuOpen(false);
+  const isDark = savedTheme
+    ? savedTheme === "dark"
+    : systemPrefersDark;
+
+  useEffect(() => {
+    const preference = window.matchMedia("(prefers-color-scheme: dark)");
+    const updateSystemPreference = (event) => {
+      setSystemPrefersDark(event.matches);
+    };
+
+    preference.addEventListener("change", updateSystemPreference);
+    return () => preference.removeEventListener("change", updateSystemPreference);
+  }, []);
+
+  useEffect(() => {
+    if (savedTheme) {
+      document.documentElement.dataset.theme = savedTheme;
+      window.localStorage.setItem("digiclave-theme", savedTheme);
+    } else {
+      delete document.documentElement.dataset.theme;
+      window.localStorage.removeItem("digiclave-theme");
+    }
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", isDark ? "#101B28" : "#F7FAFD");
+  }, [isDark, savedTheme]);
 
   return (
     <header className="site-header">
@@ -205,6 +378,37 @@ function Header() {
           <a href="#contact" onClick={closeMenu}>
             Contact
           </a>
+          <button
+            className="theme-toggle"
+            type="button"
+            aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
+            onClick={() => {
+              setSavedTheme(isDark ? "light" : "dark");
+              closeMenu();
+            }}
+          >
+            <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+              {isDark ? (
+                <path
+                  d="M16.2 12.5A7 7 0 0 1 7.5 3.8a7.1 7.1 0 1 0 8.7 8.7Z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinejoin="round"
+                />
+              ) : (
+                <>
+                  <circle cx="10" cy="10" r="3.3" stroke="currentColor" strokeWidth="1.5" />
+                  <path
+                    d="M10 1.8v1.6m0 13.2v1.6m8.2-8.2h-1.6M3.4 10H1.8m14-5.8-1.1 1.1M5.3 14.7l-1.1 1.1m11.6 0-1.1-1.1M5.3 5.3 4.2 4.2"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </>
+              )}
+            </svg>
+            <span>{isDark ? "Light mode" : "Dark mode"}</span>
+          </button>
           <a
             className="button button--small button--dark nav-cta"
             href={whatsappLink("Hi DigiClave Technologies! I'd like to start a project.")}
@@ -273,7 +477,7 @@ function Hero() {
     <section className="hero" id="home">
       <div className="container hero-grid">
         <div className="hero-copy">
-          <p className="eyebrow eyebrow--hero">Web development · SEO · AI solutions</p>
+          <WordRotator />
           <h1 aria-label="Build a digital presence that moves you forward.">
             <TextReveal text="Build a digital" as="span" />
             <br />
@@ -325,10 +529,12 @@ function Services() {
           description="Useful digital solutions, designed around what your business needs next."
         />
         <div className="service-grid">
-          {services.map((service) => (
-            <article
+          {services.map((service, index) => (
+            <RevealItem
+              as="article"
               className="service-card"
               id={service.id}
+              delay={index * 0.1}
               key={service.number}
             >
               <div className="card-topline">
@@ -350,9 +556,14 @@ function Services() {
               >
                 Let’s talk <ArrowIcon diagonal />
               </a>
-            </article>
+            </RevealItem>
           ))}
         </div>
+        <section className="studio-stats" aria-label="DigiClave at a glance">
+          <CountUp value={services.length} label="Service areas" />
+          <CountUp value={projects.length} label="Live project" />
+          <CountUp value={processSteps.length} label="Project steps" />
+        </section>
       </div>
     </section>
   );
@@ -382,14 +593,19 @@ function Principles() {
         </div>
         <div className="principles-list">
           {principles.map(([number, title, description]) => (
-            <article className="principle" key={number}>
+            <RevealItem
+              as="article"
+              className="principle"
+              delay={(Number(number) - 1) * 0.08}
+              key={number}
+            >
               <span className="principle-number">{number}</span>
               <div>
                 <h3>{title}</h3>
                 <p>{description}</p>
               </div>
               <span className="principle-plus" aria-hidden="true">↗</span>
-            </article>
+            </RevealItem>
           ))}
         </div>
       </div>
@@ -410,9 +626,32 @@ function Work() {
           <span className="work-count">01 / LIVE PROJECT</span>
         </div>
         <div className="project-grid">
-          {projects.map((project) => (
-            <article className="project-card project-card--featured" key={project.number}>
-              <div className="project-preview project-preview--live">
+          {projects.map((project, index) => (
+            <RevealItem
+              as="article"
+              className="project-card project-card--featured"
+              delay={index * 0.1}
+              key={project.number}
+            >
+              <div
+                className="project-preview project-preview--live"
+                onPointerMove={(event) => {
+                  if (event.pointerType !== "mouse") return;
+                  const bounds = event.currentTarget.getBoundingClientRect();
+                  event.currentTarget.style.setProperty(
+                    "--cursor-x",
+                    `${event.clientX - bounds.left}px`,
+                  );
+                  event.currentTarget.style.setProperty(
+                    "--cursor-y",
+                    `${event.clientY - bounds.top}px`,
+                  );
+                }}
+                onPointerLeave={(event) => {
+                  event.currentTarget.style.setProperty("--cursor-x", "-100%");
+                  event.currentTarget.style.setProperty("--cursor-y", "-100%");
+                }}
+              >
                 <div className="live-site-window">
                   <div className="live-site-chrome">
                     <span className="live-site-dots" aria-hidden="true">
@@ -447,7 +686,7 @@ function Work() {
                 </div>
                 <span className="project-number">{project.number}</span>
               </div>
-            </article>
+            </RevealItem>
           ))}
         </div>
       </div>
@@ -493,22 +732,25 @@ function About() {
       </section>
       <section className="founders" aria-label="Our founders">
         <div className="container founder-grid">
-          <article className="founder-card founder-card--featured">
+          <RevealItem
+            as="article"
+            className="founder-card founder-card--featured"
+          >
             <div className="founder-avatar" aria-hidden="true">AS</div>
             <div>
               <span className="founder-role">Founder</span>
               <h3>Anubhav Singh</h3>
               <p>Drawn to technology, websites, and useful digital solutions.</p>
             </div>
-          </article>
-          <article className="founder-card">
+          </RevealItem>
+          <RevealItem as="article" className="founder-card" delay={0.1}>
             <div className="founder-avatar founder-avatar--outline" aria-hidden="true">AJ</div>
             <div>
               <span className="founder-role">Co-founder · Creative</span>
               <h3>Aarohi Jain</h3>
               <p>Bringing a thoughtful eye for ideas, design, and how things feel.</p>
             </div>
-          </article>
+          </RevealItem>
         </div>
       </section>
     </>
@@ -516,12 +758,7 @@ function About() {
 }
 
 function Process() {
-  const steps = [
-    ["01", "Discover", "We listen and learn about your business, goals, and requirements."],
-    ["02", "Plan", "Together, we define the scope, design direction, and approach."],
-    ["03", "Build", "We create the website or automation, then test how it works."],
-    ["04", "Launch", "We hand over the project and discuss support where it’s useful."],
-  ];
+  const [gridRef, isVisible] = useInView();
 
   return (
     <section className="section section--process">
@@ -531,14 +768,22 @@ function Process() {
           title="From first conversation to launch."
           description="A collaborative process that keeps the work focused and the next step clear."
         />
-        <div className="process-grid">
-          {steps.map(([number, title, description]) => (
-            <article className="process-step" key={number}>
+        <div
+          className={`process-grid${isVisible ? " is-visible" : ""}`}
+          ref={gridRef}
+        >
+          {processSteps.map(([number, title, description], index) => (
+            <RevealItem
+              as="article"
+              className="process-step"
+              delay={index * 0.1}
+              key={number}
+            >
               <span className="process-number">{number}</span>
               <span className="process-marker" aria-hidden="true" />
               <h3>{title}</h3>
               <p>{description}</p>
-            </article>
+            </RevealItem>
           ))}
         </div>
       </div>
@@ -679,6 +924,12 @@ function Contact() {
             WhatsApp will open with your details. You’ll need to press Send
             there to submit your inquiry.
           </p>
+          {whatsappHref && (
+            <p className="form-fallback form-success" role="status" aria-live="polite">
+              <span className="success-mark" aria-hidden="true">✓</span>
+              Your inquiry message is ready. Review it in WhatsApp and press Send to submit.
+            </p>
+          )}
           {whatsappHref && (
             <p className="form-fallback">
               If a new tab didn’t open,{" "}
