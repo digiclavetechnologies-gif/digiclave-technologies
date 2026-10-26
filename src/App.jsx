@@ -1,65 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { TextReveal } from "./components/TextReveal.jsx";
+import { trackEvent } from "./analytics.js";
+import { servicePages } from "./service-content.js";
 
 const WHATSAPP_URL = "https://wa.me/919456853697";
 const EMAIL = "digiclavetechnologies@gmail.com";
 const PRECISE_LEARNING_URL = "https://precise-learning-burari-mu.vercel.app/";
 
-const services = [
-  {
-    number: "01",
-    id: "web-development",
-    title: "Web development",
-    description:
-      "Clear, responsive websites that give your business a confident place to grow online.",
-    items: [
-      "Business and portfolio websites",
-      "Landing pages and e-commerce",
-      "Redesign, maintenance and support",
-    ],
-    message: "Hi DigiClave Technologies! I'd like to discuss a website project.",
-  },
-  {
-    number: "02",
-    id: "ai-automation",
-    title: "AI automation",
-    description:
-      "Thoughtful automations that reduce repetitive work and help everyday processes run smoothly.",
-    items: [
-      "Workflow and task automation",
-      "Lead capture and follow-up",
-      "Third-party app integrations",
-    ],
-    message: "Hi DigiClave Technologies! I'd like to discuss AI automation.",
-  },
-  {
-    number: "03",
-    id: "ai-assistants",
-    title: "AI assistants",
-    description:
-      "Helpful conversational tools that can answer questions, qualify leads, and support your team.",
-    items: [
-      "Website chatbots",
-      "Automated FAQ responses",
-      "Lead qualification workflows",
-    ],
-    message: "Hi DigiClave Technologies! I'd like to explore AI solutions.",
-  },
-  {
-    number: "04",
-    id: "google-business-profile-seo",
-    title: "Google Business Profile & SEO",
-    description:
-      "Set up your local search presence and make it easier for nearby customers to find your business online.",
-    items: [
-      "Google Business Profile setup",
-      "Local SEO foundations",
-      "On-page SEO improvements",
-    ],
-    message:
-      "Hi DigiClave Technologies! I'd like help with Google Business Profile setup and SEO.",
-  },
-];
+const services = servicePages;
 
 const projects = [
   {
@@ -213,7 +161,7 @@ function WordRotator() {
   );
 }
 
-function CountUp({ value, label }) {
+function CountUp({ value, suffix = "", label }) {
   const [ref, isVisible] = useInView();
   const [count, setCount] = useState(0);
 
@@ -242,9 +190,14 @@ function CountUp({ value, label }) {
   }, [isVisible, value]);
 
   return (
-    <div className="studio-stat" ref={ref} role="group" aria-label={`${value} ${label}`}>
+    <div
+      className={`studio-stat${isVisible ? " is-visible" : ""}`}
+      ref={ref}
+      role="group"
+      aria-label={`${value}${suffix} ${label}`}
+    >
       <span className="studio-stat-value" aria-hidden="true">
-        {count.toLocaleString()}
+        {count.toLocaleString()}{suffix}
       </span>
       <span className="studio-stat-label" aria-hidden="true">{label}</span>
     </div>
@@ -414,6 +367,9 @@ function Header() {
             href={whatsappLink("Hi DigiClave Technologies! I'd like to start a project.")}
             target="_blank"
             rel="noreferrer"
+            onClick={() =>
+              trackEvent("whatsapp_click", { placement: "header" })
+            }
           >
             Start your project <ArrowIcon diagonal />
           </a>
@@ -499,6 +455,9 @@ function Hero() {
               href={whatsappLink("Hi DigiClave Technologies! I'm interested in your services.")}
               target="_blank"
               rel="noreferrer"
+              onClick={() =>
+                trackEvent("whatsapp_click", { placement: "hero" })
+              }
             >
               <span>Start your project <ArrowIcon diagonal /></span>
             </a>
@@ -541,7 +500,7 @@ function Services() {
                 <span className="card-number">{service.number}</span>
                 <span className="card-cross" aria-hidden="true">+</span>
               </div>
-              <h3>{service.title}</h3>
+              <h3><a href={service.path}>{service.title}</a></h3>
               <p className="service-description">{service.description}</p>
               <ul>
                 {service.items.map((item) => (
@@ -553,6 +512,12 @@ function Services() {
                 href={whatsappLink(service.message)}
                 target="_blank"
                 rel="noreferrer"
+                onClick={() =>
+                  trackEvent("whatsapp_click", {
+                    placement: "service_card",
+                    service_id: service.id,
+                  })
+                }
               >
                 Let’s talk <ArrowIcon diagonal />
               </a>
@@ -561,7 +526,7 @@ function Services() {
         </div>
         <section className="studio-stats" aria-label="DigiClave at a glance">
           <CountUp value={services.length} label="Service areas" />
-          <CountUp value={projects.length} label="Live project" />
+          <CountUp value={150} suffix="+" label="Live projects" />
           <CountUp value={processSteps.length} label="Project steps" />
         </section>
       </div>
@@ -680,6 +645,11 @@ function Work() {
                     target="_blank"
                     rel="noreferrer"
                     aria-label={`Visit live website: ${project.title} (opens in a new tab)`}
+                    onClick={() =>
+                      trackEvent("project_visit", {
+                        project_id: "precise-learning",
+                      })
+                    }
                   >
                     Visit live website <ArrowIcon diagonal />
                   </a>
@@ -689,6 +659,47 @@ function Work() {
             </RevealItem>
           ))}
         </div>
+        <RevealItem
+          as="section"
+          className="case-study"
+          aria-labelledby="case-study-title"
+        >
+          <div className="case-study-heading">
+            <p className="eyebrow">Project overview</p>
+            <h3 id="case-study-title">A clearer online home for local tuition.</h3>
+            <p>
+              Precise Learning offers tuition for Classes 6–12 in Burari,
+              Delhi. The website helps families understand the learning
+              options and find a straightforward way to enquire.
+            </p>
+          </div>
+          <div className="case-study-grid">
+            <article>
+              <span>01 / Audience</span>
+              <h4>Students and families</h4>
+              <p>
+                Information is organized around Classes 6–8, 9–10, and
+                11–12, with subjects and location made easy to scan.
+              </p>
+            </article>
+            <article>
+              <span>02 / Experience</span>
+              <h4>Learning, explained</h4>
+              <p>
+                The site outlines the teaching approach, subject areas, and
+                class groups so visitors can explore what is offered.
+              </p>
+            </article>
+            <article>
+              <span>03 / Enquiries</span>
+              <h4>A direct next step</h4>
+              <p>
+                Visitors can open a pre-filled WhatsApp enquiry and review
+                their message before sending it.
+              </p>
+            </article>
+          </div>
+        </RevealItem>
       </div>
     </section>
   );
@@ -840,6 +851,10 @@ function Contact() {
       "",
       "Please let me know the next steps.",
     ].join("\n");
+    trackEvent("inquiry_whatsapp_open", {
+      placement: "contact_form",
+      service: formData.get("service"),
+    });
     const url = whatsappLink(message);
     setWhatsappHref(url);
     window.open(url, "_blank", "noopener,noreferrer");
@@ -1025,6 +1040,9 @@ function FloatingWhatsApp() {
       target="_blank"
       rel="noreferrer"
       aria-label="Contact DigiClave on WhatsApp"
+      onClick={() =>
+        trackEvent("whatsapp_click", { placement: "floating_button" })
+      }
     >
       <WhatsAppIcon />
     </a>
