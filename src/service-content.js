@@ -75,10 +75,10 @@ export const servicePages = [
     title: "Google Business Profile & SEO",
     navigationTitle: "Google Business Profile & SEO",
     description:
-      "Google Business Profile setup and local, on-page SEO foundations to help nearby customers discover your business.",
-    headline: "Make your local online presence easier to find.",
+      "Google Business Profile setup and local, on-page SEO foundations for your business, wherever you serve customers.",
+    headline: "Strengthen your local search presence.",
     introduction:
-      "Get the essentials of your business profile and website content in order. Search visibility and customer results depend on many factors and are not guaranteed.",
+      "Get the essentials of your business profile and website content in order for your chosen service area, wherever your business is based. Search visibility and customer results depend on many factors and are not guaranteed.",
     items: [
       "Google Business Profile setup",
       "Local SEO foundations",

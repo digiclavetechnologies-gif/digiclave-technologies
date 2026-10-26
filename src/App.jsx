@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { TextReveal } from "./components/TextReveal.jsx";
+import { ScrollProgress } from "./components/ScrollProgress.jsx";
 import { trackEvent } from "./analytics.js";
 import { servicePages } from "./service-content.js";
 
@@ -200,6 +201,22 @@ function CountUp({ value, suffix = "", label }) {
         {count.toLocaleString()}{suffix}
       </span>
       <span className="studio-stat-label" aria-hidden="true">{label}</span>
+    </div>
+  );
+}
+
+function WorldwideStat() {
+  const [ref, isVisible] = useInView();
+
+  return (
+    <div
+      className={`studio-stat studio-stat--worldwide${isVisible ? " is-visible" : ""}`}
+      ref={ref}
+      role="group"
+      aria-label="Available to work with clients worldwide"
+    >
+      <span className="studio-stat-value" aria-hidden="true">Worldwide</span>
+      <span className="studio-stat-label" aria-hidden="true">Client reach</span>
     </div>
   );
 }
@@ -465,7 +482,7 @@ function Hero() {
               Explore our services <ArrowIcon />
             </a>
           </div>
-          <p className="hero-footnote">An independent digital studio · Building together</p>
+          <p className="hero-footnote">Available worldwide · Remote-friendly collaboration</p>
         </div>
         <HeroVisual />
       </div>
@@ -525,7 +542,7 @@ function Services() {
           ))}
         </div>
         <section className="studio-stats" aria-label="DigiClave at a glance">
-          <CountUp value={services.length} label="Service areas" />
+          <WorldwideStat />
           <CountUp value={150} suffix="+" label="Live projects" />
           <CountUp value={processSteps.length} label="Project steps" />
         </section>
@@ -1052,6 +1069,7 @@ function FloatingWhatsApp() {
 export default function App() {
   return (
     <>
+      <ScrollProgress />
       <a className="skip-link" href="#main-content">Skip to content</a>
       <Header />
       <main id="main-content">

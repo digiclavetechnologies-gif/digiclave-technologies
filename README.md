@@ -21,7 +21,8 @@ npm run build
 
 The production site uses `https://digiclave-technologies.vercel.app/`.
 Service pages have their own titles, descriptions, canonical URLs, and
-structured service data. `public/robots.txt` points crawlers to
+structured service data. The site is available to clients worldwide and is
+designed for remote collaboration. `public/robots.txt` points crawlers to
 `public/sitemap.xml`; update the sitemap and page canonical URLs if the
 production domain changes.
 

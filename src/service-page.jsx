@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { ScrollProgress } from "./components/ScrollProgress.jsx";
 import { servicePages } from "./service-content.js";
 import { trackEvent } from "./analytics.js";
 import "./styles.css";
@@ -15,6 +16,60 @@ if (!root || !service) {
 }
 
 const relatedServices = servicePages.filter((page) => page.id !== service.id);
+
+function useInView() {
+  const ref = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return undefined;
+    if (
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      !("IntersectionObserver" in window)
+    ) {
+      setIsVisible(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15 },
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, isVisible];
+}
+
+function Reveal({
+  as: Element = "div",
+  className = "",
+  delay = 0,
+  children,
+  ...props
+}) {
+  const [ref, isVisible] = useInView();
+
+  return (
+    <Element
+      {...props}
+      ref={ref}
+      className={`${className} motion-reveal${isVisible ? " is-visible" : ""}`}
+      style={{ "--reveal-delay": `${delay}s` }}
+    >
+      {children}
+    </Element>
+  );
+}
+
 function whatsappLink() {
   return `${WHATSAPP_URL}?text=${encodeURIComponent(service.message)}`;
 }
@@ -56,6 +111,7 @@ function ServicePage() {
 
   return (
     <>
+      <ScrollProgress />
       <a className="skip-link" href="#main-content">Skip to content</a>
       <header className="site-header">
         <div className="container service-header-inner">
@@ -88,7 +144,7 @@ function ServicePage() {
       <main id="main-content" className="service-page">
         <section className="service-page-hero">
           <div className="container">
-            <p className="eyebrow">{service.number} / DigiClave services</p>
+            <p className="eyebrow">Worldwide service · {service.number}</p>
             <h1>{service.headline}</h1>
             <p className="service-page-intro">{service.introduction}</p>
             <div className="service-page-actions">
@@ -113,7 +169,7 @@ function ServicePage() {
         </section>
         <section className="section service-page-body">
           <div className="container">
-            <div className="service-page-columns">
+            <Reveal className="service-page-columns">
               <div>
                 <p className="eyebrow">How we can help</p>
                 <h2>A useful scope, shaped around your needs.</h2>
@@ -124,21 +180,25 @@ function ServicePage() {
                   <li key={item}>{item}</li>
                 ))}
               </ul>
-            </div>
-            <div className="service-approach">
+            </Reveal>
+            <Reveal className="service-approach">
               <p className="eyebrow">A clear approach</p>
               <div className="service-approach-grid">
                 {service.approach.map((step, index) => (
-                  <article className="service-approach-step" key={step}>
+                  <article
+                    className="service-approach-step"
+                    key={step}
+                    style={{ "--reveal-delay": `${index * 0.1}s` }}
+                  >
                     <span>{String(index + 1).padStart(2, "0")}</span>
                     <p>{step}</p>
                   </article>
                 ))}
               </div>
-            </div>
+            </Reveal>
           </div>
         </section>
-        <section className="service-related">
+        <Reveal as="section" className="service-related">
           <div className="container service-related-inner">
             <div>
               <p className="eyebrow">Explore more</p>
@@ -152,7 +212,7 @@ function ServicePage() {
               ))}
             </nav>
           </div>
-        </section>
+        </Reveal>
       </main>
       <footer className="site-footer service-page-footer">
         <div className="container service-footer-inner">
